@@ -1,0 +1,10 @@
+/build/
+/desktop/build/
+/.cache/
+/evidence/*.disk
+/evidence/*.evd
+/evidence/*.ppm
+/evidence/*.lock
+/evidence/*.log
+.DS_Store
+__pycache__/

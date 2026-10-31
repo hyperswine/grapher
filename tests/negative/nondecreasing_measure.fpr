@@ -1,0 +1,4 @@
+count : (n : Int | measure n) -> Int .
+count n | n <= 0 = 0.
+count n = count n.
+main = print (count 2).

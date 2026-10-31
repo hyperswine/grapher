@@ -1,0 +1,1 @@
+main = Vec.free (Vec.push "wrong" (Vec.iota 2)).

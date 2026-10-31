@@ -1,0 +1,64 @@
+# Shared, checkout-independent point operations. Coordinates really are I32.
+List = use "std/list".
+String = use "std/string".
+
+point : Int -> Int -> (I32, I32) .
+point x y = (I32.ofInt x, I32.ofInt y).
+
+integer : I32 -> Int .
+integer x = case I32.toInt x of Ok n -> n | Err why -> error why.
+
+coordinates : (I32, I32) -> (Int, Int) .
+coordinates p = (x, y) = p; (integer x, integer y).
+
+name 0 = "Parabola".
+name 1 = "Triangle wave".
+name n = "Constellation".
+
+curve kind x = if kind == 0 then x * x / 20 - 10
+  else 10 - Int.abs ((x + 20) % 20 - 10) * 2.
+
+sample : Int -> Vector (I32, I32) .
+sample kind = if kind == 2 then Vec.fromList
+  [point -17 5, point -12 -4, point -8 7, point -3 1, point 2 -7,
+   point 5 6, point 9 -2, point 13 8, point 18 -5]
+  else Vec.fromList (List.map (fn n -> x = n * 2; point x (curve kind x)) (List.range -10 10)).
+
+shift : Int -> Int -> Vector (I32, I32) -> Vector (I32, I32) .
+shift dx dy points = Vec.map (fn p -> (x, y) = p; (x + I32.ofInt dx, y + I32.ofInt dy)) points.
+
+contains : Int -> Int -> (points : List (I32, I32) | measure points) -> Bool .
+contains x y points = case points of
+    Nil -> False
+  | p :: rest -> if p == point x y then True else contains x y rest.
+
+stats : Vector (I32, I32) -> (Int, Int, Int) .
+stats points =
+  (result, owned) = Vec.fold (fn acc p ->
+    (n, sx, sy) = acc; (x, y) = coordinates p; (n + 1, sx + x, sy + y)) (0, 0, 0) points;
+  _ = Vec.free owned;
+  result.
+
+parse text = case String.split "," text of
+    [x, y] -> (case I32.parse x of
+        Err why -> Err "x: {why}"
+      | Ok a -> (case I32.parse y of Err why -> Err "y: {why}" | Ok b -> Ok (a, b)))
+  | other -> Err "expected x,y (two I32 coordinates)".
+
+parseAll : (tokens : List String | measure tokens) -> Result (List (I32, I32)) String .
+parseAll tokens = case tokens of
+    Nil -> Ok Nil
+  | token :: rest -> (case parse token of
+      Err why -> Err "{token}: {why}"
+    | Ok p -> (case parseAll rest of Err why -> Err why | Ok ps -> Ok (p :: ps))).
+
+cell points x y = if contains x y points then "*"
+  else if x == 0 and y == 0 then "+"
+  else if x == 0 then "|" else if y == 0 then "-" else " ".
+
+ascii : Vector (I32, I32) -> String .
+ascii points =
+  ps = Vec.toList points;
+  rows = List.map (fn row -> y = 10 - row;
+                             strJoin "" (List.map (fn x -> cell ps x y) (List.range -20 20))) (List.range 0 20);
+  strJoin "\n" rows.

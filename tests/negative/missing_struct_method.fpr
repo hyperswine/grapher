@@ -1,0 +1,3 @@
+Broken = Struct Add {zero = 0}.
+total (s : Add) xs = listFold (fn x acc -> acc + x) s.zero xs.
+main = print (total Broken [1, 2]).

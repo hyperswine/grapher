@@ -1,0 +1,23 @@
+{
+  "passed": true,
+  "sdk": "QOS Portable 0.2.0",
+  "runner": "Sol",
+  "checks": [
+    "desktop launched installed Grapher and captured parabola",
+    "dataset switching changes the rendered frame",
+    "clear, arrow cursor movement and Enter add a custom I32 point",
+    "adding the same point does not duplicate it",
+    "Backspace removes the last point",
+    "grid toggle changes rendering",
+    "third dataset and reset work",
+    "Escape returns home; desktop shuts down cleanly"
+  ],
+  "captures": [
+    "grapher-parabola.png",
+    "grapher-wave.png",
+    "grapher-empty.png",
+    "grapher-custom.png",
+    "grapher-no-grid.png",
+    "grapher-stars.png"
+  ]
+}

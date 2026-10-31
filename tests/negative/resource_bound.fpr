@@ -1,0 +1,3 @@
+increment : Int -> Int | work increment <= 0 .
+increment n = n + 1.
+main = print (increment 2).

@@ -1,0 +1,11 @@
+#!/bin/sh
+set -eu
+ROOT=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+cd "$ROOT"
+case "${1:-test}" in
+  test) exec make --no-print-directory -s test ;;
+  desktop) exec make --no-print-directory -s desktop ;;
+  gui-check) exec make --no-print-directory -s gui-check ;;
+  frame-check) exec make --no-print-directory -s frame-check ;;
+  *) make --no-print-directory -s build/grapher; exec "$ROOT/build/grapher" "$@" ;;
+esac

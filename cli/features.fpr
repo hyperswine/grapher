@@ -1,0 +1,117 @@
+# Language checks use actual results, not printed claims. Sys.loop owns the
+# service loop; numeric and structural recursions declare their measures.
+P = use "../lib/points".
+List = use "std/list".
+A = use "std/actor".
+Task = use "std/task".
+Lens = use "std/lens".
+Json = use "std/json".
+
+Envelope a = Type (Payload a | Empty).
+Request = Type (Translate Int Int (List (I32, I32)) | Stop).
+Model = {zoom : Int, label : String}.
+
+expect name yes = if yes then _ = print "PASS  {name}"; 1
+  else _ = Sys.stderr "FAIL  {name}\n"; Sys.exit 1.
+
+identity : a -> a .
+identity x = x.
+ownedIdentity : Vector a -> Vector a .
+ownedIdentity x = x.
+total (s : Add) xs = listFold (fn x acc -> acc + x) s.zero xs.
+
+countdown : (n : Int | measure n) -> Int -> Int .
+countdown n acc | n <= 0 = acc.
+countdown n acc = countdown (n - 1) (acc + n).
+
+sumList : (xs : List Int | measure xs) -> Int .
+sumList xs = case xs of Nil -> 0 | n :: rest -> n + sumList rest.
+
+positive : (n : Int | n > 0) -> Int .
+positive n = n + 1.
+
+bounded : Int -> Int | work bounded <= 10 | alloc bounded <= 0 .
+bounded n = n + 1.
+
+requireOk : Result a String -> a .
+requireOk r = case r of Ok x -> x | Err why -> error why.
+isError result = case result of Err why -> True | Ok value -> False.
+
+# A finite service protocol, correlated replies, checked send and explicit stop.
+worker : Int -> Unit .
+worker self =
+  _ = Sys.loop 0 (turn self);
+  Unit.
+turn self requests =
+  message = receive self;
+  (from, id, request) = message;
+  case request of
+    Translate dx dy ps ->
+      translated = Vec.toList (P.shift dx dy (Vec.fromList ps));
+      _ = requireOk (A.reply (from, id) translated);
+      (True, requests + 1)
+  | Stop -> _ = requireOk (A.reply (from, id) Nil); (False, requests).
+
+actorTests : Unit -> Int .
+actorTests u =
+  me = myself 0;
+  service = A.spawnWith (A.Dynamic 2) worker;
+  ps = [P.point -2 3, P.point 4 -5];
+  answer = requireOk (A.callWithin 2000 me service (Translate 3 -2 ps));
+  a = expect "actors: correlated request/reply transforms I32 point tuples" (answer == [P.point 1 1, P.point 7 -7]);
+  expired = A.callWithin 0 me service (Translate 0 0 ps);
+  e = expect "actors: expired deadline refuses before admission" (isError expired);
+  stopped = requireOk (A.callWithin 2000 me service Stop);
+  b = expect "actors: explicit shutdown acknowledged" (stopped == Nil);
+  _ = kill service;
+  c = expect "actors: dead receiver returns Err" (isError (send service 1));
+  batch = requireOk (Task.mapBoundedWithin 2000 2 (fn n -> n * n) [4, 1, 3, 2]);
+  d = expect "actors: bounded parallel work preserves input order" (batch == [16, 1, 9, 4]);
+  a + b + c + d + e.
+
+run : Unit -> Unit .
+run u =
+  _ = print "Grapher / installed FP-RISC language checks";
+  a = expect "I32: signed wrap and explicit conversion" (I32.str (I32.ofInt 2147483647 + I32.ofInt 1) == "-2147483648");
+  b = expect "I32: bit operations" (I32.popcnt (I32.ofInt 15) == 4 and I32.hex (I32.shl (I32.ofInt 1) 31) == "80000000");
+  c = expect "I32: parser reports invalid input" (isError (I32.parse "12x"));
+  d = expect "polymorphism: one identity, two concrete types" (identity 42 == 42 and identity "point" == "point");
+  e = expect "parameterized ADT and exhaustive pattern matching" (case Payload (P.point 2 -3) of Payload p -> p == P.point 2 -3 | Empty -> False);
+  f = expect "signature/structure specialization: Add over Int and String" (total Int [1,2,3] == 6 and total Str ["x",",","y"] == "x,y");
+  original = {zoom = 1, label = "plot"};
+  fresh = {original | zoom = 2};
+  g = expect "records: immutable update" (fresh.zoom == 2 and original.zoom == 1);
+  path = @Model.zoom;
+  changed = path.set 4 {zoom = 1, label = "plot"};
+  h = expect "type-level field paths: checked get and set" (path.get changed == 4 and changed.label == "plot");
+  updated = requireOk (Lens.set (@Model) "zoom" "3" changed);
+  i = expect "schema generation: string path uses typed decoder" (updated.zoom == 3 and isError (Lens.set (@Model) "zoom" "wrong" changed));
+  j = expect "measures: numeric termination" (countdown 10 0 == 55);
+  k = expect "measures: structural termination" (sumList [2,3,5] == 10);
+  l = expect "refinement contract and static resource bound" (positive 2 == 3 and bounded 4 == 5);
+  offset = 7;
+  closure = fn n -> n + offset;
+  m = expect "closures, partial application and pipeline" (([1,2,3] |> List.map closure |> List.fold (fn a x -> a + x) 0) == 27);
+  points = ownedIdentity (Vec.fromList [P.point -2 3, P.point 4 -5]);
+  (length, points1) = Vec.len points;
+  ((x, y), points2) = Vec.at 0 points1;
+  shifted = P.shift 1 2 points2;
+  coords = Vec.toList shifted;
+  n = expect "linear Vector (I32,I32): typed read, map and consuming conversion" (length == 2 and x == I32.ofInt -2 and y == I32.ofInt 3 and coords == [P.point -1 5, P.point 5 -3]);
+  vf = Vec.map (fn n -> F64.ofInt n + 0.5) (Vec.iota 3);
+  (last, vf2) = Vec.at 2 vf;
+  _ = Vec.free vf2;
+  o = expect "type-changing vectors: Int to F64 with output layout" (last == 2.5);
+  emptyStats = P.stats (Vec.fromList Nil);
+  p = expect "empty point vector is valid" (emptyStats == (0,0,0));
+  q = expect "point parser: success and malformed tuple refusal" (P.parse "-3,4" == Ok (P.point -3 4) and isError (P.parse "1,2,3"));
+  jsonText = "[\"Grapher\\n\",[1,2],true]";
+  r = expect "JSON: parse/render roundtrip and escaped strings" (case Json.parse jsonText of Err why -> False | Ok value -> Json.parse (Json.render value) == Ok value);
+  owned = SStr.push (SStr.new Unit) 71;
+  (text, owned2) = SStr.toStr owned;
+  _ = drop owned2;
+  s = expect "linear string builder: ownership threaded and released" (text == "G");
+  t = expect "deep equality: records, tuples and generic containers" ([{p = P.point 1 2, visible = True}] == [{p = P.point 1 2, visible = True}]);
+  actors = actorTests Unit;
+  passed = a+b+c+d+e+f+g+h+i+j+k+l+m+n+o+p+q+r+s+t+actors;
+  print "{passed} runtime checks passed".

@@ -1,0 +1,17 @@
+{
+  "passed": true,
+  "runner": "Sol",
+  "frames": {
+    "parabola": 21,
+    "wave": 21,
+    "empty": 0,
+    "custom": 1,
+    "no-grid": 0,
+    "stars": 9
+  },
+  "method": "scanline connected components inside chart; independent coordinate fixtures; 3px tolerance",
+  "captureResolution": [
+    1280,
+    720
+  ]
+}

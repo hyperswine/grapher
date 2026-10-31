@@ -1,0 +1,83 @@
+# Grapher: a new desktop app using only the installed QOS SDK.
+D = use "qos/desktop".
+S = use "programs/mods/scene2d".
+List = use "std/list".
+P = use "../lib/points".
+
+init = ({kind = 0, points = Vec.toList (P.sample 0), cx = 0, cy = 0, grid = True}, Nil).
+
+choose kind m =
+  _ = print "grapher: dataset {P.name kind}";
+  ({m | kind = kind, points = Vec.toList (P.sample kind)}, Nil).
+
+update (D.Key 57) m = choose ((m.kind + 1) % 3) m.
+update (D.Key 2) m = choose 0 m.
+update (D.Key 3) m = choose 1 m.
+update (D.Key 4) m = choose 2 m.
+update (D.Key 19) m = choose m.kind m.
+update (D.Key 34) m =
+  _ = print "grapher: grid {not m.grid}";
+  ({m | grid = not m.grid}, Nil).
+update (D.Key 105) m = ({m | cx = Int.max -20 (m.cx - 1)}, Nil).
+update (D.Key 106) m = ({m | cx = Int.min 20 (m.cx + 1)}, Nil).
+update (D.Key 103) m = ({m | cy = Int.min 10 (m.cy + 1)}, Nil).
+update (D.Key 108) m = ({m | cy = Int.max -10 (m.cy - 1)}, Nil).
+update (D.Key 28) m =
+  ps = if P.contains m.cx m.cy m.points then m.points else List.append m.points [P.point m.cx m.cy];
+  _ = print "grapher: add ({m.cx},{m.cy}); {List.length ps} points";
+  ({m | points = ps}, Nil).
+update (D.Key 14) m =
+  ps = List.take (Int.max 0 (List.length m.points - 1)) m.points;
+  _ = print "grapher: remove; {List.length ps} points";
+  ({m | points = ps}, Nil).
+update (D.Key 46) m =
+  _ = print "grapher: clear; 0 points";
+  ({m | points = Nil}, Nil).
+update event m = (m, Nil).
+
+ink = (900, 940, 980).
+muted = (470, 580, 670).
+accent = (220, 880, 740).
+label size color text = S.Lbl [S.Fs size, S.Fg color] text.
+
+square cw ch ps m x y =
+  present = P.contains x y ps;
+  cursor = x == m.cx and y == m.cy;
+  axis = x == 0 or y == 0;
+  bg = if axis then (105, 165, 205) else (43, 78, 110);
+  base = [S.W cw, S.H ch, S.Col, S.Center, S.Mid, S.Bg bg];
+  attrs = if cursor then S.Bord (980, 730, 270) :: base
+    else if m.grid then S.Bord (68, 108, 138) :: base else base;
+  dot = Int.max 3 (Int.min 8 (Int.min cw ch - 3));
+  S.Box attrs (if present then [S.Box [S.W dot, S.H dot, S.Round (dot / 2), S.Bg accent] Nil] else Nil).
+
+# The public plotting function consumes a genuine linear tuple vector.
+# Only the renderer's immutable list snapshot survives the call.
+plot : Int -> Int -> _ -> Vector (I32, I32) -> _ .
+plot cw ch m points =
+  ps = Vec.toList points;
+  S.Box [S.Col, S.W (cw * 41), S.H (ch * 21)]
+    (List.map (fn row -> y = 10 - row;
+      S.Box [S.Row, S.H ch] (List.map (fn x -> square cw ch ps m x y) (List.range -20 20))) (List.range 0 20)).
+
+view viewport m =
+  (w, h) = viewport;
+  cw = Int.max 3 (Int.min 22 ((w - 88) / 41));
+  ch = Int.max 3 (Int.min 20 ((h - 210) / 21));
+  count = List.length m.points;
+  caption = "{P.name m.kind}   /   {count} points   /   Vector (I32, I32)";
+  yaxis = S.Box [S.Col, S.W 40] (List.map (fn row -> y = 10 - row;
+    S.Box [S.H ch] (if y % 5 == 0 then [label 12 muted "{y}"] else Nil)) (List.range 0 20));
+  tree = S.Box [S.Col, S.W w, S.H h, S.Pad 20, S.Gap 8, S.Bg (25, 49, 77), S.Clip]
+    [S.Box [S.Row, S.H 36, S.Gap 18, S.Mid]
+       [label 30 ink "Grapher", label 12 accent "THE INTEGER FIELD"],
+     S.Box [S.H 20] [label 14 muted "A small 2D point explorer. Pick a curve, then make it yours."],
+     S.Box [S.H 20] [label 15 accent caption],
+     S.Box [S.Row, S.Gap 8] [yaxis, plot cw ch m (Vec.fromList m.points)],
+     S.Box [S.Row, S.H 20]
+       [S.Box [S.W 48] Nil, S.Box [S.W (cw * 10)] [label 12 muted "-20"],
+        S.Box [S.W (cw * 10)] [label 12 muted "-10"], S.Box [S.W (cw * 10)] [label 12 muted "0"],
+        S.Box [S.W (cw * 10)] [label 12 muted "10"], label 12 muted "20"],
+     S.Box [S.H 20] [label 14 ink "Cursor ({m.cx}, {m.cy})   ARROWS move   ENTER add   BACKSPACE undo last"],
+     S.Box [S.H 20] [label 12 muted "1 Parabola   2 Wave   3 Stars   SPACE next   G grid   C clear   R reset   ESC desktop"]];
+  (tree, Nil, "Grapher / {count} points / cursor ({m.cx}, {m.cy})").

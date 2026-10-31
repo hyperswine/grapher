@@ -1,0 +1,104 @@
+{
+  "runtimeChecks": 25,
+  "negativeCompilerChecks": 12,
+  "runtimeRefusals": 1,
+  "cliIntegrationChecks": 9,
+  "compiler": "fpr 0.12.0",
+  "runner": "Sol",
+  "sourceCheckoutsPresent": false,
+  "passed": true,
+  "checks": [
+    {
+      "name": "25 native runtime language checks",
+      "passed": true
+    },
+    {
+      "name": "ASCII plot matches independent reference: case 1",
+      "passed": true
+    },
+    {
+      "name": "ASCII plot matches independent reference: case 2",
+      "passed": true
+    },
+    {
+      "name": "ASCII plot matches independent reference: case 3",
+      "passed": true
+    },
+    {
+      "name": "ASCII plot matches independent reference: case 4",
+      "passed": true
+    },
+    {
+      "name": "CLI rejects malformed/out-of-range point: bad",
+      "passed": true
+    },
+    {
+      "name": "CLI rejects malformed/out-of-range point: 1,2,3",
+      "passed": true
+    },
+    {
+      "name": "CLI rejects malformed/out-of-range point: 1,",
+      "passed": true
+    },
+    {
+      "name": "CLI rejects malformed/out-of-range point: 4294967296,0",
+      "passed": true
+    },
+    {
+      "name": "unknown command exits 2",
+      "passed": true
+    },
+    {
+      "name": "compiler refuses mixed_i32",
+      "passed": true
+    },
+    {
+      "name": "compiler refuses vector_element",
+      "passed": true
+    },
+    {
+      "name": "compiler refuses vector_reuse",
+      "passed": true
+    },
+    {
+      "name": "compiler refuses generic_duplicate",
+      "passed": true
+    },
+    {
+      "name": "compiler refuses linear_discard",
+      "passed": true
+    },
+    {
+      "name": "compiler refuses invalid_type_path",
+      "passed": true
+    },
+    {
+      "name": "compiler refuses nonexhaustive",
+      "passed": true
+    },
+    {
+      "name": "compiler refuses nondecreasing_measure",
+      "passed": true
+    },
+    {
+      "name": "compiler refuses resource_bound",
+      "passed": true
+    },
+    {
+      "name": "compiler refuses missing_struct_method",
+      "passed": true
+    },
+    {
+      "name": "compiler refuses wrong_signature",
+      "passed": true
+    },
+    {
+      "name": "compiler refuses unmeasured_recursion",
+      "passed": true
+    },
+    {
+      "name": "runtime refuses a violated refinement contract",
+      "passed": true
+    }
+  ]
+}

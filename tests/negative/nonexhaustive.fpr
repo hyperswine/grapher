@@ -1,0 +1,3 @@
+Choice = Type (First | Second).
+choose x = case x of First -> 1.
+main = print (choose Second).

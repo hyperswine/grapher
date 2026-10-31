@@ -1,0 +1,21 @@
+F = use "features".
+P = use "../lib/points".
+
+plot points =
+  (count, owned) = Vec.len points;
+  _ = print "Grapher / {count} I32 points / x: -20..20 / y: -10..10";
+  print (P.ascii owned).
+
+main : Unit .
+main = case Sys.args Unit of
+    Nil -> F.run Unit
+  | ["test"] -> F.run Unit
+  | ["--help"] -> print "grapher test | demo [parabola|wave|stars] | plot x,y ...\nASCII viewport: x=-20..20, y=-10..10; points outside it are clipped."
+  | ["demo"] -> plot (P.sample 0)
+  | ["demo", "parabola"] -> plot (P.sample 0)
+  | ["demo", "wave"] -> plot (P.sample 1)
+  | ["demo", "stars"] -> plot (P.sample 2)
+  | "plot" :: tokens -> (case P.parseAll tokens of
+      Ok points -> plot (Vec.fromList points)
+    | Err why -> _ = Sys.stderr "grapher: {why}\n"; Sys.exit 2)
+  | other -> _ = Sys.stderr "usage: grapher test | demo [parabola|wave|stars] | plot x,y ...\n"; Sys.exit 2.

@@ -1,0 +1,9 @@
+[app]
+id = "grapher"
+name = "Grapher"
+version = "0.1.0"
+kind = "desktop"
+
+[build]
+entry = "main.fpr"
+target = "qos-portable"

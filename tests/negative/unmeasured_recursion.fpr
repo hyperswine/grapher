@@ -1,0 +1,3 @@
+forever : Int -> Int .
+forever n = forever (n + 1).
+main = print (forever 1).

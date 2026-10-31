@@ -1,0 +1,2 @@
+Model = {zoom : Int}.
+main = p = @Model.missing; print (p.get {zoom = 1}).

@@ -1,0 +1,3 @@
+duplicate : a -> (a, a) .
+duplicate x = (x, x).
+main = (a, b) = duplicate (Vec.iota 2); _ = Vec.free a; Vec.free b.

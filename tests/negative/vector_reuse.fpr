@@ -1,0 +1,1 @@
+main = v = Vec.iota 2; _ = Vec.free v; Vec.free v.
