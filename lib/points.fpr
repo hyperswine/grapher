@@ -27,10 +27,8 @@ sample kind = if kind == 2 then Vec.fromList
 shift : Int -> Int -> Vector (I32, I32) -> Vector (I32, I32) .
 shift dx dy points = Vec.map (fn p -> (x, y) = p; (x + I32.ofInt dx, y + I32.ofInt dy)) points.
 
-contains : Int -> Int -> (points : List (I32, I32) | measure points) -> Bool .
-contains x y points = case points of
-    Nil -> False
-  | p :: rest -> if p == point x y then True else contains x y rest.
+contains : Int -> Int -> List (I32, I32) -> Bool .
+contains x y points = List.member (point x y) points.
 
 stats : Vector (I32, I32) -> (Int, Int, Int) .
 stats points =
