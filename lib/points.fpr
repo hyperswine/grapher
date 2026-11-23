@@ -3,7 +3,7 @@ List = use "std/list".
 String = use "std/string".
 
 point : Int -> Int -> (I32, I32) .
-point x y = (I32.ofInt x, I32.ofInt y).
+point x y = (I32.trunc x, I32.trunc y).
 
 integer : I32 -> Int .
 integer x = case I32.toInt x of Ok n -> n | Err why -> error why.
@@ -25,7 +25,7 @@ sample kind = if kind == 2 then Vec.fromList
   else Vec.fromList (List.map (fn n -> x = n * 2; point x (curve kind x)) (List.range -10 10)).
 
 shift : Int -> Int -> Vector (I32, I32) -> Vector (I32, I32) .
-shift dx dy points = Vec.map (fn p -> (x, y) = p; (x + I32.ofInt dx, y + I32.ofInt dy)) points.
+shift dx dy points = Vec.map (fn p -> (x, y) = p; (x + I32.trunc dx, y + I32.trunc dy)) points.
 
 contains : Int -> Int -> List (I32, I32) -> Bool .
 contains x y points = List.member (point x y) points.
