@@ -6,6 +6,7 @@ A = use "std/actor".
 Task = use "std/task".
 Lens = use "std/lens".
 Json = use "std/json".
+Bytes = use "std/bytes".
 
 Envelope a = Type (Payload a | Empty).
 Request = Type (Translate Int Int (List (I32, I32)) | Stop).
@@ -72,8 +73,8 @@ actorTests u =
 run : Unit -> Unit .
 run u =
   _ = print "Grapher / installed FP-RISC language checks";
-  a = expect "I32: signed wrap and explicit conversion" (I32.str (I32.ofInt 2147483647 + I32.ofInt 1) == "-2147483648");
-  b = expect "I32: bit operations" (I32.popcnt (I32.ofInt 15) == 4 and I32.hex (I32.shl (I32.ofInt 1) 31) == "80000000");
+  a = expect "I32: signed wrap and explicit conversion" (I32.str (I32.trunc 2147483647 + I32.trunc 1) == "-2147483648");
+  b = expect "I32: bit operations" (I32.popcnt (I32.trunc 15) == 4 and I32.hex (I32.shl (I32.trunc 1) 31) == "80000000");
   c = expect "I32: parser reports invalid input" (isError (I32.parse "12x"));
   d = expect "polymorphism: one identity, two concrete types" (identity 42 == 42 and identity "point" == "point");
   e = expect "parameterized ADT and exhaustive pattern matching" (case Payload (P.point 2 -3) of Payload p -> p == P.point 2 -3 | Empty -> False);
@@ -97,7 +98,7 @@ run u =
   ((x, y), points2) = Vec.at 0 points1;
   shifted = P.shift 1 2 points2;
   coords = Vec.toList shifted;
-  n = expect "linear Vector (I32,I32): typed read, map and consuming conversion" (length == 2 and x == I32.ofInt -2 and y == I32.ofInt 3 and coords == [P.point -1 5, P.point 5 -3]);
+  n = expect "linear Vector (I32,I32): typed read, map and consuming conversion" (length == 2 and x == I32.trunc -2 and y == I32.trunc 3 and coords == [P.point -1 5, P.point 5 -3]);
   vf = Vec.map (fn n -> F64.ofInt n + 0.5) (Vec.iota 3);
   (last, vf2) = Vec.at 2 vf;
   _ = Vec.free vf2;
@@ -107,10 +108,10 @@ run u =
   q = expect "point parser: success and malformed tuple refusal" (P.parse "-3,4" == Ok (P.point -3 4) and isError (P.parse "1,2,3"));
   jsonText = "[\"Grapher\\n\",[1,2],true]";
   r = expect "JSON: parse/render roundtrip and escaped strings" (case Json.parse jsonText of Err why -> False | Ok value -> Json.parse (Json.render value) == Ok value);
-  owned = SStr.push (SStr.new Unit) 71;
-  (text, owned2) = SStr.toStr owned;
-  _ = drop owned2;
-  s = expect "linear string builder: ownership threaded and released" (text == "G");
+  owned = Bytes.put 0 71 (Bytes.new 1);
+  (text, owned2) = Bytes.pack 0 1 owned;
+  _ = Bytes.free owned2;
+  s = expect "linear byte buffer: ownership threaded and released" (text == "G");
   t = expect "deep equality: records, tuples and generic containers" ([{p = P.point 1 2, visible = True}] == [{p = P.point 1 2, visible = True}]);
   actors = actorTests Unit;
   passed = a+b+c+d+e+f+g+h+i+j+k+l+m+n+o+p+q+r+s+t+actors;

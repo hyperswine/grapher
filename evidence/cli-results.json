@@ -3,9 +3,9 @@
   "negativeCompilerChecks": 12,
   "runtimeRefusals": 1,
   "cliIntegrationChecks": 9,
-  "compiler": "fpr 0.12.0",
+  "compiler": "fpr 0.15.0-dev",
   "runner": "Sol",
-  "sourceCheckoutsPresent": false,
+  "sourceCheckoutsPresent": true,
   "passed": true,
   "checks": [
     {
