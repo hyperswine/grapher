@@ -6,7 +6,7 @@ A = use "std/actor".
 Task = use "std/task".
 Lens = use "std/lens".
 Json = use "std/json".
-Bytes = use "std/bytes".
+Bytes = use "std/binary".
 
 Envelope a = Type (Payload a | Empty).
 Request = Type (Translate Int Int (List (I32, I32)) | Stop).
