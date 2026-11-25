@@ -7,32 +7,27 @@ P = use "../lib/points".
 init = ({kind = 0, points = Vec.toList (P.sample 0), cx = 0, cy = 0, grid = True}, Nil).
 
 choose kind m =
-  _ = print "grapher: dataset {P.name kind}";
-  ({m | kind = kind, points = Vec.toList (P.sample kind)}, Nil).
+  ({m | kind = kind, points = Vec.toList (P.sample kind)}, [D.Log "grapher: dataset {P.name kind}"]).
 
-update (D.Key 57) m = choose ((m.kind + 1) % 3) m.
-update (D.Key 2) m = choose 0 m.
-update (D.Key 3) m = choose 1 m.
-update (D.Key 4) m = choose 2 m.
-update (D.Key 19) m = choose m.kind m.
-update (D.Key 34) m =
-  _ = print "grapher: grid {not m.grid}";
-  ({m | grid = not m.grid}, Nil).
-update (D.Key 105) m = ({m | cx = Int.max -20 (m.cx - 1)}, Nil).
-update (D.Key 106) m = ({m | cx = Int.min 20 (m.cx + 1)}, Nil).
-update (D.Key 103) m = ({m | cy = Int.min 10 (m.cy + 1)}, Nil).
-update (D.Key 108) m = ({m | cy = Int.max -10 (m.cy - 1)}, Nil).
-update (D.Key 28) m =
+update (D.Key k) m | k == D.keySpace = choose ((m.kind + 1) % 3) m.
+update (D.Key k) m | k == D.key1 = choose 0 m.
+update (D.Key k) m | k == D.key2 = choose 1 m.
+update (D.Key k) m | k == D.key3 = choose 2 m.
+update (D.Key k) m | k == D.keyR = choose m.kind m.
+update (D.Key k) m | k == D.keyG =
+  ({m | grid = not m.grid}, [D.Log "grapher: grid {not m.grid}"]).
+update (D.Key k) m | k == D.keyLeft = ({m | cx = Int.max -20 (m.cx - 1)}, Nil).
+update (D.Key k) m | k == D.keyRight = ({m | cx = Int.min 20 (m.cx + 1)}, Nil).
+update (D.Key k) m | k == D.keyUp = ({m | cy = Int.min 10 (m.cy + 1)}, Nil).
+update (D.Key k) m | k == D.keyDown = ({m | cy = Int.max -10 (m.cy - 1)}, Nil).
+update (D.Key k) m | k == D.keyEnter =
   ps = if P.contains m.cx m.cy m.points then m.points else List.append m.points [P.point m.cx m.cy];
-  _ = print "grapher: add ({m.cx},{m.cy}); {List.length ps} points";
-  ({m | points = ps}, Nil).
-update (D.Key 14) m =
+  ({m | points = ps}, [D.Log "grapher: add ({m.cx},{m.cy}); {List.length ps} points"]).
+update (D.Key k) m | k == D.keyBackspace =
   ps = List.take (Int.max 0 (List.length m.points - 1)) m.points;
-  _ = print "grapher: remove; {List.length ps} points";
-  ({m | points = ps}, Nil).
-update (D.Key 46) m =
-  _ = print "grapher: clear; 0 points";
-  ({m | points = Nil}, Nil).
+  ({m | points = ps}, [D.Log "grapher: remove; {List.length ps} points"]).
+update (D.Key k) m | k == D.keyC =
+  ({m | points = Nil}, [D.Log "grapher: clear; 0 points"]).
 update event m = (m, Nil).
 
 ink = (900, 940, 980).
