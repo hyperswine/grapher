@@ -27,8 +27,13 @@ sample kind = if kind == 2 then Vec.fromList
 shift : Int -> Int -> Vector (I32, I32) -> Vector (I32, I32) .
 shift dx dy points = Vec.map (fn p -> (x, y) = p; (x + I32.trunc dx, y + I32.trunc dy)) points.
 
+# Direct I32 field compares: List.member would use generic == on the pair.
 contains : Int -> Int -> List (I32, I32) -> Bool .
-contains x y points = List.member (point x y) points.
+contains x y points = hasPoint (I32.trunc x) (I32.trunc y) points.
+hasPoint : I32 -> I32 -> (ps : List (I32, I32) | measure ps) -> Bool .
+hasPoint x y ps = case ps of
+    Nil -> False
+  | p :: rest -> (px, py) = p; if px == x and py == y then True else hasPoint x y rest.
 
 stats : Vector (I32, I32) -> (Int, Int, Int) .
 stats points =
@@ -50,13 +55,50 @@ parseAll tokens = case tokens of
       Err why -> Err "{token}: {why}"
     | Ok p -> (case parseAll rest of Err why -> Err why | Ok ps -> Ok (p :: ps))).
 
-cell points x y = if contains x y points then "*"
+# Viewport is x = -20..20, y = -10..10 (41 x 21 = 861 cells).
+# Index (x + 20) + (y + 10) * 41. Occupied cells are 1, empty are 0.
+cellGlyph x y occupied = if occupied == 1 then "*"
   else if x == 0 and y == 0 then "+"
   else if x == 0 then "|" else if y == 0 then "-" else " ".
 
+inView x y = x >= (0 - 20) and x <= 20 and y >= (0 - 10) and y <= 10.
+
+gridIx x y = (x + 20) + (y + 10) * 41.
+
+paint : Vector Int -> (I32, I32) -> Vector Int .
+paint grid p =
+  (x, y) = coordinates p;
+  if inView x y then Vec.set (gridIx x y) 1 grid else grid.
+
+fillRow : Vector Int -> Int -> (xs : List Int | measure xs) -> String -> (String, Vector Int) .
+fillRow grid y xs acc = case xs of
+    Nil -> (acc, grid)
+  | x :: rest ->
+      (occupied, grid2) = Vec.get (gridIx x y) grid;
+      fillRow grid2 y rest "{acc}{cellGlyph x y occupied}".
+
+fillRows : Vector Int -> (rows : List Int | measure rows) -> List String -> (List String, Vector Int) .
+fillRows grid rows acc = case rows of
+    Nil -> (acc, grid)
+  | row :: rest ->
+      y = 10 - row;
+      (line, grid2) = fillRow grid y (List.range (0 - 20) 20) "";
+      fillRows grid2 rest (line :: acc).
+
+revStrings : (xs : List String | measure xs) -> List String -> List String .
+revStrings xs acc = case xs of
+    Nil -> acc
+  | x :: rest -> revStrings rest (x :: acc).
+
+zeros : (n : Int | measure n) -> List Int -> List Int .
+zeros n acc = if n <= 0 then acc else zeros (n - 1) (0 :: acc).
+
+# One occupancy grid per plot: paint every point, then look up each cell.
+# Output is byte-identical to the old per-cell List.member walk.
 ascii : Vector (I32, I32) -> String .
 ascii points =
-  ps = Vec.toList points;
-  rows = List.map (fn row -> y = 10 - row;
-                             strJoin "" (List.map (fn x -> cell ps x y) (List.range -20 20))) (List.range 0 20);
-  strJoin "\n" rows.
+  (painted, owned) = Vec.fold paint (Vec.fromList (zeros 861 Nil)) points;
+  (linesRev, grid) = fillRows painted (List.range 0 20) Nil;
+  _ = Vec.free grid;
+  _ = Vec.free owned;
+  strJoin "\n" (revStrings linesRev Nil).
