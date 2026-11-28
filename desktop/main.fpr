@@ -2,6 +2,7 @@
 D = use "qos/desktop".
 S = use "programs/mods/scene2d".
 List = use "std/list".
+Math = use "std/math".
 P = use "../lib/points".
 
 init = ({kind = 0, points = Vec.toList (P.sample 0), cx = 0, cy = 0, grid = True}, Nil).
@@ -43,7 +44,7 @@ square cw ch ps m x y =
   base = [S.W cw, S.H ch, S.Col, S.Center, S.Mid, S.Bg bg];
   attrs = if cursor then S.Bord (980, 730, 270) :: base
     else if m.grid then S.Bord (68, 108, 138) :: base else base;
-  dot = Int.max 3 (Int.min 8 (Int.min cw ch - 3));
+  dot = Math.clamp 3 8 (Int.min cw ch - 3);
   S.Box attrs (if present then [S.Box [S.W dot, S.H dot, S.Round (dot / 2), S.Bg accent] Nil] else Nil).
 
 # The public plotting function consumes a genuine linear tuple vector.
@@ -57,8 +58,8 @@ plot cw ch m points =
 
 view viewport m =
   (w, h) = viewport;
-  cw = Int.max 3 (Int.min 22 ((w - 88) / 41));
-  ch = Int.max 3 (Int.min 20 ((h - 210) / 21));
+  cw = Math.clamp 3 22 ((w - 88) / 41);
+  ch = Math.clamp 3 20 ((h - 210) / 21);
   count = List.length m.points;
   caption = "{P.name m.kind}   /   {count} points   /   Vector (I32, I32)";
   yaxis = S.Box [S.Col, S.W 40] (List.map (fn row -> y = 10 - row;

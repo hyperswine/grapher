@@ -1,5 +1,6 @@
 # Shared, checkout-independent point operations. Coordinates really are I32.
 List = use "std/list".
+R = use "std/result".
 String = use "std/string".
 
 point : Int -> Int -> (I32, I32) .
@@ -48,12 +49,8 @@ parse text = case String.split "," text of
       | Ok a -> (case I32.parse y of Err why -> Err "y: {why}" | Ok b -> Ok (a, b)))
   | other -> Err "expected x,y (two I32 coordinates)".
 
-parseAll : (tokens : List String | measure tokens) -> Result (List (I32, I32)) String .
-parseAll tokens = case tokens of
-    Nil -> Ok Nil
-  | token :: rest -> (case parse token of
-      Err why -> Err "{token}: {why}"
-    | Ok p -> (case parseAll rest of Err why -> Err why | Ok ps -> Ok (p :: ps))).
+parseAll : List String -> Result (List (I32, I32)) String .
+parseAll tokens = R.traverse (fn token -> R.mapError (fn why -> "{token}: {why}") (parse token)) tokens.
 
 # Viewport is x = -20..20, y = -10..10 (41 x 21 = 861 cells).
 # Index (x + 20) + (y + 10) * 41. Occupied cells are 1, empty are 0.
@@ -85,20 +82,12 @@ fillRows grid rows acc = case rows of
       (line, grid2) = fillRow grid y (List.range (0 - 20) 20) "";
       fillRows grid2 rest (line :: acc).
 
-revStrings : (xs : List String | measure xs) -> List String -> List String .
-revStrings xs acc = case xs of
-    Nil -> acc
-  | x :: rest -> revStrings rest (x :: acc).
-
-zeros : (n : Int | measure n) -> List Int -> List Int .
-zeros n acc = if n <= 0 then acc else zeros (n - 1) (0 :: acc).
-
 # One occupancy grid per plot: paint every point, then look up each cell.
 # Output is byte-identical to the old per-cell List.member walk.
 ascii : Vector (I32, I32) -> String .
 ascii points =
-  (painted, owned) = Vec.fold paint (Vec.fromList (zeros 861 Nil)) points;
+  (painted, owned) = Vec.fold paint (Vec.fromList (List.repeat 861 0)) points;
   (linesRev, grid) = fillRows painted (List.range 0 20) Nil;
   _ = Vec.free grid;
   _ = Vec.free owned;
-  strJoin "\n" (revStrings linesRev Nil).
+  strJoin "\n" (List.reverse linesRev).
